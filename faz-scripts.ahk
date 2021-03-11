@@ -116,4 +116,3 @@ ClipChanged(cbType) {
 
 #include lib\autocorrect.ahk
 #include lib\Tippy.ahk
-#include lib\RunAsTask.ahk
