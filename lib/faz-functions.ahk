@@ -1,4 +1,4 @@
-RunGetOutput(command) {
+﻿RunGetOutput(command) {
     ComObjCreate("WScript.Shell").Run("cmd.exe /c " . command . "|clip", 0, true)
     return %clipboard%
 }
