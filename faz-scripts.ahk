@@ -1,6 +1,6 @@
-;@Ahk2Exe-SetName Faz's Utility Script
+;@Ahk2Exe-SetName Faz's Scripts
 ;@Ahk2Exe-SetDescription by Fazlee
-;@Ahk2Exe-SetVersion 26.1
+;@Ahk2Exe-SetVersion 1.2
 ;@Ahk2Exe-SetCopyright (c) 2021`, Fazlee Majeed
 ;@Ahk2Exe-SetOrigFilename faz-scripts.ahk
 
@@ -14,12 +14,12 @@ SetTitleMatchMode RegEx
 #Persistent
 #NoTrayIcon
 
-Global ClipList = ["","","","",""]
+;Global ClipList = ["","","","",""]
 
 OnClipboardChange("ClipChanged")
 
-FileReadLine v_num, faz-scripts.ahk, 3
-v_num := StrReplace(v_num, ";@Ahk2Exe-SetVersion ","")
+FileReadLine v_num, %A_ScriptFullPath%, 3
+v_num := SubStr(v_num, 22)
 
 FileGetTime v_date, %A_ScriptFullPath%
 FormatTime v_date, v_date, d MMMM yyyy
@@ -33,7 +33,7 @@ CoordMode Mouse, Client
 EnvGet doc, doc
 
 SoundPlay %A_Windir%\media\Speech On.wav
-pMessage("Faz's Utility Script v" v_num "`n" v_date "`n`nFazlee Majeed`n✉ xxxxxxx@xxxxxxxx.com",3000)
+pMessage("Faz Script v" v_num "`n" v_date "`n`nFazlee Majeed`n✉ faz@stefaz.com",2000)
 
 ;; Get account owner to share data across devices and allow multiple users to have their own data
 IniRead AccountOwner, general.ini, Account-Owners, %A_UserName%, %A_Space%
@@ -82,16 +82,13 @@ While i < 5
 }
 VarName :=
 
-CapsLock:: ; double tap capslock
+CapsLock:: ; double tap capslock to enable, single tap to disable
+SetCapsLockState AlwaysOff
 if not dblTap("CapsLock")
 	return
-CapsState := GetKeyState("CapsLock", "T")
-;SetCapsLockState % !GetKeyState("CapsLock", "T")
-if CapsState = 0
-    SetCapsLockState AlwaysOn
-else
-    SetCapsLockState AlwaysOff 
-pMessage("Caps Lock " ((CapsState = 0) ? ("ON") : ("OFF")),500)
+SetCapsLockState % !GetKeyState("CapsLock", "T")
+pMessage("Caps Lock " (GetKeyState("CapsLock", "T") ? ("ON") : ("OFF")),500)
+Send {CapsLock}
 return
 
 ; Clipboard manager & cleanup
@@ -99,20 +96,20 @@ ExcludeList = "stadia.com"
 ClipChanged(cbType) {
 	; URL cleanup
 	if SubStr(Clipboard, 1, 4) = "http" and not RegExMatch(Clipboard, "stadia.com")
-		Clipboard := RegExReplace(Clipboard, "(?:\?|\&|\/)(?:_ga|lipi|utm|ref|cgid|ie=|t-id|igshid|ascsubtag|hc_ref|coliid|at_|_trkparms|gclid|fbclid|ncid|vero_|sr_|__|pf_rd_p|hash|feature=|skidn|ssPageName|_pos).*","")
+		Clipboard := RegExReplace(Clipboard, "(?:\?|\&|\/|)(?:_ga|lipi|utm|ref|cgid|ie=|t-id|igshid|ascsubtag|hc_ref|coliid|at_|_trkparms|gclid|fbclid|ncid|vero_|sr_|__|pf_rd_p|hash|feature=|skidn|ssPageName|_pos|aqs|sourceid)[a-z0-9-_]+(?:\?|\&|)","")
 	ClipWait
+	/*
 	; Push new clipboard to history (capslock & 1—5)
 	if Clipboard != ClipList[1]
 	{
 		ClipList.Insert(1,Clipboard)
 		ClipList.remove(6)
 	}
+	*/
 	return
 }
 
 #include lib\faz-hotkeys.ahk
 #include lib\faz-hotstrings.ahk
+#include lib\faz-mouse.ahk
 #include lib\faz-functions.ahk
-
-#include lib\autocorrect.ahk
-#include lib\Tippy.ahk
