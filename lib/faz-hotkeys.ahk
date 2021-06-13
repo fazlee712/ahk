@@ -1,4 +1,7 @@
 #MaxHotkeysPerInterval 200
+#HotkeyModifierTimeout -1
+
+SetNumLockState AlwaysOn
 
 <!1::Numpad1
 <!2::Numpad2
@@ -10,54 +13,200 @@
 <!8::Numpad8
 <!9::Numpad9
 <!0::Numpad0
+<!-::NumpadSub
 <!+::NumpadAdd
 
-CapsLock & e::
-run %editor%
-return
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;; CAPSLOCK HOTKEYS ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
-#if A_ComputerName contains faz-pc
+#If GetKeyState("Capslock", "P")
 
-Capslock & a::send +#a
+Left::send #^{Left}
+Right::send #^{Right}
+Up::send #^d
+Down::send #^{F4}
 
-#if
+;1::F1
+;2::F2
+;3::F3
+;4::F4
+;5::F5
+;6::F6
+;7::F7
+;8::F8
+;9::F9
+;0::F10
+;
+;a::Home
+;d::End
 
-CapsLock & F10::
+; Windows Terminal Quake Mode (ctrl+`)
+q::^`
+
+Backspace::Delete
+
+F10::
 run %A_AHKPath% "%A_ScriptDir%\faz-scripts.ahk"
 run %A_AHKPath% "%A_ScriptDir%\menu.ahk"
 sleep 100
 pMessage("Script could not be reloaded!")
 return
 
-CapsLock & F2::
-Send %EmailAdd1%
-return
-
-CapsLock & r:: ; reddit RemindMe bot
+r:: ; reddit RemindMe bot
 InputBox ReminderData, Reminder Bot, Paste link and enter time
 If Not ErrorLevel
 {
 	ReminderData := StrSplit(ReminderData, " ",,2)
-	FinalURL := "https://reddit.com/message/compose/?to=RemindMeBot&subject=Reminder&message=`%5B" . ReminderData[1] . "`%5D`%0A`%0ARemindMe! " . ReminderData[2]
-	;Run %FinalURL%
-	Run % "https://reddit.com/message/compose/?to=RemindMeBot&subject=Reminder&message=`%5B" . ReminderData[1] . "`%5D`%0A`%0ARemindMe! " . ReminderData[2]
+	Run % "https://old.reddit.com/message/compose/?to=RemindMeBot&subject=Reminder&message=`%5B" . ReminderData[1] . "`%5D`%0A`%0ARemindMe! " . ReminderData[2]
+}
+;try Run menu.ahk
+;try Reload
+return
+
+c::
+CurrentExplorerPath := A_Desktop
+if explorerHwnd := WinActive("ahk_class CabinetWClass")
+{
+    for window in ComObjCreate("Shell.Application").Windows
+    {
+        if (window.hwnd = explorerHwnd)
+            CurrentExplorerPath := window.Document.Folder.Self.Path
+    }
+}
+switch A_ComputerName
+{
+	case "faz-pc", "LPBC0624":
+		Run % "wt --startingDirectory """ . CurrentExplorerPath . """"
+	default:
+		Run % ComSpec . " " . CurrentExplorerPath
 }
 return
 
-:c*:]d::
-FormatTime CurrentDateTime,, d/M/yy
-Send %CurrentDateTime%
+; Open in Text Editor
+w::
+try Run % """" . editor . """ """ . Explorer_GetSelection() . """"
+catch
+	msgbox Error
 return
 
-:c*:]D::
-FormatTime CurrentDateTime,, d MMMM yyyy
-Send %CurrentDateTime%
+e::
+run %editor%
 return
 
-:*:]t::
-FormatTime CurrentDateTime,, H:mm
-Send %CurrentDateTime%
+; Volume control
+v::
+if A_ComputerName contains faz-pc,stefaz S-15,LPBC0624
+	send +^!]
+else
+	run SndVol
 return
+
+; Force close foreground executable
+F4::
+Winget Pname, ProcessName, A
+if close_check
+	close_check = 3
+Else
+	close_check = 1
+GoSub ForceClose
+return
+
+ForceClose:
+switch close_check
+{
+case 3:
+	pMessage("Attempting to close " Pname,1000)
+	close_check = 0
+	SetTimer ForceClose, Off
+	Process close, %Pname%
+	return
+case 2:
+	pMessage("Not closing " Pname "!")
+	close_check = 0
+	SetTimer ForceClose, Off
+	return
+case 1:
+	SoundPlay *48
+	pMessage("Press CapsLock & F4`nto close " Pname,2900)
+	close_check = 2
+	SetTimer ForceClose, 3000
+	return
+default:
+	close_check = 0
+	SetTimer ForceClose, Off
+	return
+}
+
+; kill all running AHK scripts (Win+F12) 
+F12::
+if close_check
+	close_check = 3
+Else
+	close_check = 1
+GoSub ForceCloseScripts
+return
+
+ForceCloseScripts:
+switch close_check
+{
+case 3:
+	pMessage("Killing all scripts!")
+	Run taskkill /f /im autohotkey.exe,, hide
+	Run taskkill /f /im AutoHotkeyU64.exe,, hide
+	Run taskkill /f /im AutoHotkeyA32.exe,, hide
+	Run taskkill /f /im AutoHotkeyU32.exe,, hide
+	close_check = 0
+	SetTimer ForceCloseScripts, Off
+	ExitApp
+	return
+case 2:
+	pMessage("Not closing scripts!")
+	close_check = 0
+	SetTimer ForceCloseScripts, Off
+	return
+case 1:
+	SoundPlay *48
+	pMessage("Close all scripts?",2900)
+	close_check = 2
+	SetTimer ForceCloseScripts, 3000
+	return
+default:
+	close_check = 0
+	SetTimer ForceCloseScripts, Off
+	return
+}
+
+; shortcuts
+
+s::
+if A_ComputerName contains faz-pc,LPBC0624,stefaz S-15
+{
+	send ^{F8}
+	return
+}
+OSversion := DllCall("GetVersion") & 0xFF
+if OSVersion = 10
+	Run explorer.exe ms-screenclip:
+else
+	Run SnippingTool.exe
+return
+
+; Always-on-Top
+t::
+WinGetClass Title, A
+Winset Alwaysontop, , A
+Winget Title, ProcessName, A
+pMessage("Always-on-Top toggled for " Title)
+return
+
+b::ToggleFakeFullscreen()
+
+#if
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; END CAPSLOCK HOTKEYS ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ^\::Media_Play_Pause
 ^[::Media_Prev
@@ -70,8 +219,8 @@ if audio_device = Headset
 	{
 		Run nircmd.exe setdefaultsounddevice "Laptop" 1
 		Run nircmd.exe setdefaultsounddevice "Laptop" 2
-		Run nircmd.exe setdefaultsounddevice "Speakers" 1
-		Run nircmd.exe setdefaultsounddevice "Speakers" 2
+		Run nircmd.exe setdefaultsounddevice "Desktop" 1
+		Run nircmd.exe setdefaultsounddevice "Desktop" 2
 	}
 	audio_device = Speakers
 }
@@ -93,11 +242,36 @@ return
 
 #MaxThreadsPerHotkey 1
 
-PauseGameMode := False
-chosenSpec := 
+;;; Apex Legends ;;;
+#IfWinActive ahk_exe r5apex.exe
+
+toggle:=
+
+F2::
+Send {F1}
+sleep 20
+MouseMove -2,-1,R
+sleep 20
+Click
+return
+
+F5::
+Loop 2 {
+	send M
+	KeyWait M
+	Sleep 50
+	MouseMove % (toggle:=!toggle) ? 1689 : 1843, 336
+	Sleep 50
+	Click
+	Sleep 50
+}
+return
 
 ;;; SWTOR ;;;
 #IfWinActive  ahk_exe swtor.exe
+
+PauseGameMode := False
+chosenSpec := 
 
 EnergyLevel :=
 PixelChkX := 
@@ -336,197 +510,3 @@ Capslock & 3::Send % ClipList[3]
 Capslock & 4::Send % ClipList[4]
 Capslock & 5::Send % ClipList[5]
 */
-
-Capslock & c::
-Send {CapsLock Up}
-Switch A_ComputerName
-{
-	case "faz-pc":
-		Run SCHTASKS.EXE /RUN /TN "Launch Terminal as Admin",, Hide
-	case "LPBC0624":
-		Run wt.exe
-	default:
-		Run cmd.exe
-}
-return
-
-CapsLock & Left::send #^{Left}
-CapsLock & Right::send #^{Right}
-CapsLock & Up::send #^d
-CapsLock & Down::send #^{F4}
-
-; Open in Text Editor
-CapsLock & w::
-ClipSaved := ClipboardAll
-Clipboard = 
-Send ^c
-ClipWait 0
-Type := FileExist(Clipboard)
-;Run % ((Type = "A" || Type = "D") ? (editor " " Clipboard) : (editor))
-If Type = A
-	Run `"%editor%`" `"%Clipboard%`"
-Else
-	Run `"%editor%`"
-Clipboard := ClipSaved
-return
-
-; Volume control
-CapsLock & v::
-if A_ComputerName contains faz-pc,stefaz S-15,LPBC0624
-	send +^!]
-else
-	run SndVol
-return
-
-; Force close foreground executable
-CapsLock & F4::
-Winget Pname, ProcessName, A
-if close_check
-	close_check = 3
-Else
-	close_check = 1
-GoSub ForceClose
-return
-
-ForceClose:
-switch close_check
-{
-case 3:
-	pMessage("Attempting to close " Pname,1000)
-	close_check = 0
-	SetTimer ForceClose, Off
-	Process close, %Pname%
-	return
-case 2:
-	pMessage("Not closing " Pname "!")
-	close_check = 0
-	SetTimer ForceClose, Off
-	return
-case 1:
-	SoundPlay *48
-	pMessage("Press CapsLock & F4`nto close " Pname,2900)
-	close_check = 2
-	SetTimer ForceClose, 3000
-	return
-default:
-	close_check = 0
-	SetTimer ForceClose, Off
-	return
-}
-
-; kill all running AHK scripts (Win+F12) 
-CapsLock & F12::
-if close_check
-	close_check = 3
-Else
-	close_check = 1
-GoSub ForceCloseScripts
-return
-
-ForceCloseScripts:
-switch close_check
-{
-case 3:
-	pMessage("Killing all scripts!")
-	Run taskkill /f /im autohotkey.exe,, hide
-	run taskkill /f /im AutoHotkeyU64.exe,, hide
-	run taskkill /f /im AutoHotkeyA32.exe,, hide
-	run taskkill /f /im AutoHotkeyU32.exe,, hide
-	close_check = 0
-	SetTimer ForceCloseScripts, Off
-	ExitApp
-	return
-case 2:
-	pMessage("Not closing scripts!")
-	close_check = 0
-	SetTimer ForceCloseScripts, Off
-	return
-case 1:
-	SoundPlay *48
-	pMessage("Close all scripts?",2900)
-	close_check = 2
-	SetTimer ForceCloseScripts, 3000
-	return
-default:
-	close_check = 0
-	SetTimer ForceCloseScripts, Off
-	return
-}
-
-; shortcuts
-
-CapsLock & s::
-if A_ComputerName contains faz-pc,LPBC0624,stefaz S-15
-{
-	send ^{F8}
-	return
-}
-OSversion := DllCall("GetVersion") & 0xFF
-if OSVersion = 10
-	Run explorer.exe ms-screenclip:
-else
-	Run SnippingTool.exe
-return
-
-; Always-on-Top
-CapsLock & t::
-WinGetClass Title, A
-Winset Alwaysontop, , A
-Winget Title, ProcessName, A
-pMessage("Always-on-Top toggled for "Title)
-return
-
-ToggleFakeFullscreen()
-{
-	CoordMode Screen, Window
-	static WINDOW_STYLE_UNDECORATED := -0xC40000
-	static savedInfo := Object() ;; Associative array!
-	Winget id, ID, A
-	if (savedInfo[id])
-	{
-		inf := savedInfo[id]
-		WinSet Style, % inf["style"], ahk_id %id%
-		WinMove ahk_id %id%,, % inf["x"], % inf["y"], % inf["width"], % inf["height"]
-		savedInfo[id] := ""
-	}
-	else
-	{
-		savedInfo[id] := inf := Object()
-		WinGet ltmp, Style, A
-		inf["style"] := ltmp
-		WinGetPos ltmpX, ltmpY, ltmpWidth, ltmpHeight, ahk_id %id%
-		inf["x"] := ltmpX
-		inf["y"] := ltmpY
-		inf["width"] := ltmpWidth
-		inf["height"] := ltmpHeight
-		WinSet Style, %WINDOW_STYLE_UNDECORATED%, ahk_id %id%
-		mon := GetMonitorActiveWindow()
-		SysGet mon, Monitor, %mon%
-		WinMove A,, %monLeft%, %monTop%, % monRight-monLeft, % monBottom-monTop
-	}
-}
-
-GetMonitorAtPos(x,y)
-{
-	;; Monitor number at position x,y or -1 if x,y outside monitors.
-	SysGet monitorCount, MonitorCount
-	i := 0
-	while(i < monitorCount)
-	{
-		SysGet area, Monitor, %i%
-		if ( areaLeft <= x && x <= areaRight && areaTop <= y && y <= areaBottom )
-		{
-			return i
-		}
-		i++
-	}
-	return -1
-}
-
-GetMonitorActiveWindow() {
-	;; Get Monitor number at the center position of the Active window.
-	WinGetPos x,y,width,height, A
-	return GetMonitorAtPos(x+width/2, y+height/2)
-}
-
-CapsLock & b::ToggleFakeFullscreen()
