@@ -1,6 +1,13 @@
-﻿RunGetOutput(command) {
-    ComObjCreate("WScript.Shell").Run("cmd.exe /c " . command . "|clip", 0, true)
+RunGetOutput(command) {
+    ComObjCreate("WScript.Shell").Run(comspec . " /c " . command . "|clip", 0, true)
     return %clipboard%
+}
+
+RunCmd(command,msg:="") {
+    if StrLen(msg) > 0
+        pMessage(msg)
+    run %comspec% /c %command%,,hide
+    return
 }
 
 gst() {   ; GetSelectedText or FilePath in Windows Explorer  by Learning one 
@@ -21,10 +28,10 @@ gst() {   ; GetSelectedText or FilePath in Windows Explorer  by Learning one
 	Return ToReturn
 }
 
-pMessage(message,time="") {
-	Tippy(message,time)
-	return
-}
+    pMessage(message,time="") {
+    	Tippy(message,time) ; https://github.com/TheBestPessimist/AutoHotKey-Scripts/blob/master/lib/Tippy.ahk
+    	return
+    }
 
 beep(x)
 {
@@ -32,19 +39,20 @@ beep(x)
     return
 }
 
-UpdateData(section,var,title,message,key)
+UpdateData(section,var,title,message,key,inifile:="general.ini")
 {
     if key = 0
         key := %A_ComputerName%
     varfunc := %var%
     InputBox value, %title%, %message%,,,,,,,,%varfunc%
         If !ErrorLevel
-            IniWrite %value%, general.ini, %section%, %key%
+            IniWrite %value%, %inifile%, %section%, %key%
     return
 }
 
-dblTap(key,delay:=200){
-    if (A_PriorHotkey <> key or A_TimeSincePriorHotkey > delay)
+dblTap(key,delay:=200) 
+{
+    if (A_PriorHotkey != key or A_TimeSincePriorHotkey > delay)
         return 0
     Else
         return 1
@@ -254,3 +262,131 @@ SWTOR_readSpec()
         return
     }
 }
+
+ToggleFakeFullscreen()
+{
+    CoordMode Screen, Window
+    static WINDOW_STYLE_UNDECORATED := -0xC40000
+    static savedInfo := Object() ;; Associative array!
+    Winget id, ID, A
+    if (savedInfo[id])
+    {
+        inf := savedInfo[id]
+        WinSet Style, % inf["style"], ahk_id %id%
+        WinMove ahk_id %id%,, % inf["x"], % inf["y"], % inf["width"], % inf["height"]
+        savedInfo[id] := ""
+    }
+    else
+    {
+        savedInfo[id] := inf := Object()
+        WinGet ltmp, Style, A
+        inf["style"] := ltmp
+        WinGetPos ltmpX, ltmpY, ltmpWidth, ltmpHeight, ahk_id %id%
+        inf["x"] := ltmpX
+        inf["y"] := ltmpY
+        inf["width"] := ltmpWidth
+        inf["height"] := ltmpHeight
+        WinSet Style, %WINDOW_STYLE_UNDECORATED%, ahk_id %id%
+        mon := GetMonitorActiveWindow()
+        SysGet mon, Monitor, %mon%
+        WinMove A,, %monLeft%, %monTop%, % monRight-monLeft, % monBottom-monTop
+    }
+}
+
+GetMonitorAtPos(x,y) 
+{
+    ;; Monitor number at position x,y or -1 if x,y outside monitors.
+    SysGet monitorCount, MonitorCount
+    i := 0
+    while(i < monitorCount)
+    {
+        SysGet area, Monitor, %i%
+        if ( areaLeft <= x && x <= areaRight && areaTop <= y && y <= areaBottom )
+        {
+            return i
+        }
+        i++
+    }
+    return -1
+}
+
+GetMonitorActiveWindow() 
+{
+    ;; Get Monitor number at the center position of the Active window.
+    WinGetPos x,y,width,height, A
+    return GetMonitorAtPos(x+width/2, y+height/2)
+}
+
+Explorer_GetSelection() {
+   WinGetClass, winClass, % "ahk_id" . hWnd := WinExist("A")
+   if (winClass ~= "Progman|WorkerW")
+      oShellFolderView := GetDesktopIShellFolderViewDual()
+   else if (winClass ~= "(Cabinet|Explore)WClass") {
+      for window in ComObjCreate("Shell.Application").Windows
+         if (hWnd = window.HWND) && (oShellFolderView := window.document)
+            break
+   }
+   else
+      Return
+   
+   for item in oShellFolderView.SelectedItems
+      result .= (result = "" ? "" : "`n") . item.path
+   if !result
+      result := oShellFolderView.Folder.Self.Path
+   Return result
+}
+
+GetDesktopIShellFolderViewDual() 
+{
+    IShellWindows := ComObjCreate("{9BA05972-F6A8-11CF-A442-00A0C90A8F39}")
+    desktop := IShellWindows.Item(ComObj(19, 8)) ; VT_UI4, SCW_DESKTOP                
+   
+    ; Retrieve top-level browser object.
+    if ptlb := ComObjQuery(desktop
+        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}"  ; SID_STopLevelBrowser
+        , "{000214E2-0000-0000-C000-000000000046}") ; IID_IShellBrowser
+    {
+        ; IShellBrowser.QueryActiveShellView -> IShellView
+        if DllCall(NumGet(NumGet(ptlb+0)+15*A_PtrSize), "ptr", ptlb, "ptr*", psv) = 0
+        {
+            ; Define IID_IDispatch.
+            VarSetCapacity(IID_IDispatch, 16)
+            NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
+           
+            ; IShellView.GetItemObject -> IDispatch (object which implements IShellFolderViewDual)
+            DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", psv
+                , "uint", 0, "ptr", &IID_IDispatch, "ptr*", pdisp)
+           
+            IShellFolderViewDual := ComObjEnwrap(pdisp)
+            ObjRelease(psv)
+        }
+        ObjRelease(ptlb)
+    }
+    return IShellFolderViewDual
+}
+
+IfMod(BaseAction) ; Allows modifiers with chords (a & b::)
+{
+    if GetKeyState("Shift", "P")
+        ModKeys .= "+"
+    if GetKeyState("Ctrl", "P")
+        ModKeys .= "^"
+    if GetKeyState("Alt", "P")
+        ModKeys .= "!"
+    send % ModKeys . BaseAction
+}
+
+isCursorShown()
+{
+StructSize := A_PtrSize + 16
+VarSetCapacity(InfoStruct, StructSize)
+NumPut(StructSize, InfoStruct)
+DllCall("GetCursorInfo", UInt, &InfoStruct)
+Result := NumGet(InfoStruct, 8)
+if Result > 1
+    Return 1
+else
+    Return 0
+}
+
+#include lib\Tippy.ahk
