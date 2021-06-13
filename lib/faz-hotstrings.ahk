@@ -1,77 +1,45 @@
-﻿;#include lib\Hotstring.ahk
+;;;;;;;;;;;;;;;;;
+;;; GIF LINKS ;;;
+;;;;;;;;;;;;;;;;;
 
-;#Hotstring SI
+::gifidk::https://i.imgur.com/lwDdTgR.gifv
+::gifmaybe::https://i.imgur.com/9Np0T66.gifv
+::gifyes::https://i.imgur.com/ZX4jycy.gifv
+::giflogic::https://i.imgur.com/Rp1LPJe.gifv
+::gifwat::https://i.imgur.com/akqnxBY.gifv
+::gifneymar::https://i.imgur.com/NKV5Jmc.gifv
+::giftwice::https://i.imgur.com/8AJqJs4.gifv
+::giftoto::https://i.imgur.com/k0ExBnW.gifv
+::gifok::https://i.imgur.com/CryQijP.gifv
+::gifsorry::https://i.imgur.com/UP4nrRY.gifv
+::giftrue::https://i.imgur.com/4YF8Tag.gifv
+::gifwhatever::https://i.imgur.com/8cfGt1g.gifv
+::gifstop::https://i.imgur.com/7XugQOm.gifv
+::gifout::https://i.imgur.com/D5KNCtV.gifv
+::gifclassified::https://i.imgur.com/4eaIdeq.gifv
+::gifoh::https://i.imgur.com/79tndRZ.gifv
+::giflick::https://i.imgur.com/4Ir41O5.gifv
+::gifmou::https://i.imgur.com/EnBxVfp.gifv
+::gifcut::https://i.imgur.com/LKtb8Ht.gifv
+::gifrepost::https://i.imgur.com/Jv1YEl0.gifv
 
-CapsLock & h:: 
-; Get the text currently selected. The clipboard is used instead of
-; "ControlGet Selected" because it works in a greater variety of editors
-; (namely word processors).  Save the current clipboard contents to be
-; restored later. Although this handles only plain text, it seems better
-; than nothing:
-ClipboardOld := Clipboard
-Clipboard := "" ; Must start off blank for detection to work.
-Send ^c
-ClipWait 1
-if ErrorLevel  ; ClipWait timed out.
-    return
-; Replace CRLF and/or LF with `n for use in a "send-raw" hotstring:
-; The same is done for any other characters that might otherwise
-; be a problem in raw mode:
-ClipContent := StrReplace(Clipboard, "``", "````")  ; Do this replacement first to avoid interfering with the others below.
-ClipContent := StrReplace(ClipContent, "`r`n", "``r")  ; Using `r works better than `n in MS Word, etc.
-ClipContent := StrReplace(ClipContent, "`n", "``r")
-ClipContent := StrReplace(ClipContent, "`t", "``t")
-ClipContent := StrReplace(ClipContent, "`;", "```;")
-Clipboard := ClipboardOld  ; Restore previous contents of clipboard.
-ShowInputBox(":T:`::" ClipContent)
+;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
+
+:c*:]d::
+FormatTime CurrentDateTime,, d/M/yy
+Send %CurrentDateTime%
 return
 
-ShowInputBox(DefaultValue)
-{
-    ; This will move the InputBox's caret to a more friendly position:
-    SetTimer, MoveCaret, 10
-    ; Show the InputBox, providing the default hotstring:
-    InputBox, UserInput, New Hotstring,
-    (
-    Type your abreviation at the indicated insertion point. You can also edit the replacement text if you wish.
+:c*:]D::
+FormatTime CurrentDateTime,, d MMMM yyyy
+Send %CurrentDateTime%
+return
 
-    Example entry: :R:btw`::by the way
-    ),,,,,,,, %DefaultValue%
-    if ErrorLevel  ; The user pressed Cancel.
-        return
-
-    if RegExMatch(UserInput, "O)(?P<Label>:.*?:(?P<Abbreviation>.*?))::(?P<Replacement>.*)", Hotstring)
-    {
-        if !Hotstring.Abbreviation
-            MsgText := "You didn't provide an abbreviation"
-        else if !Hotstring.Replacement
-            MsgText := "You didn't provide a replacement"
-        else
-        {
-            Hotstring(Hotstring.Label, Hotstring.Replacement)  ; Enable the hotstring now.
-            FileAppend, `n%UserInput%, %A_ScriptFullPath%  ; Save the hotstring for later use.
-        }
-    }
-    else
-        MsgText := "The hotstring appears to be improperly formatted"
-
-    if MsgText
-    {
-        MsgBox, 4,, %MsgText%. Would you like to try again?
-        IfMsgBox, Yes
-            ShowInputBox(DefaultValue)
-    }
-    return
-    
-/*
-    MoveCaret:
-    WinWait, New Hotstring
-    ; Otherwise, move the InputBox's insertion point to where the user will type the abbreviation.
-    Send {Home}{Right 3}
-    SetTimer,, Off
-    return
-*/
-}
+:*:]t::
+FormatTime CurrentDateTime,, H:mm
+Send %CurrentDateTime%
+return
 
 :?*:!?::‽
 :*:.bn::☐
@@ -130,7 +98,7 @@ if GetKeyState("Shift", "P")
 else
 	Send –
 return
-CapsLock & 8::★
+;CapsLock & 8::★
 :*:.sqrt::√
 :*:.sq::²
 :*:.cu::³
@@ -172,7 +140,10 @@ CapsLock & 8::★
 
 #Hotstring c1
 
-#IfWinNotActive, ahk_exe swtor.exe
+GroupAdd Ignored, ahk_class Respawn001
+GroupAdd Ignored, ahk_exe swtor.exe
+
+#ifWinNotActive ahk_group Ignored
 
 :*:@@::
 Send %EmailAdd1%
@@ -199,7 +170,7 @@ return
 
 #IfWinNotActive
 
-#Hotstring
+#Hotstring C0
 
 :*:monday::Monday
 :*:tuesday::Tuesday
